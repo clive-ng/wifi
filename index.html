@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Museum Exhibit Explorer</title>
+    <style>
+        :root { --accent: #ff4757; --bg: #f1f2f6; }
+        body { font-family: sans-serif; background: var(--bg); text-align: center; padding: 20px; }
+        .card { background: white; padding: 2rem; border-radius: 20px; shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 20%; }
+        button { background: var(--accent); color: white; border: none; padding: 15px 30px; border-radius: 50px; font-size: 1.1rem; cursor: pointer; transition: transform 0.2s; }
+        button:active { transform: scale(0.95); }
+        #status { margin-top: 15px; font-size: 0.8rem; color: #7f8c8d; }
+        .trigger-active { background: #2ed573 !important; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1 id="title">Exhibit #101</h1>
+        <p id="description">Waiting for iBeacon proximity...</p>
+        
+        <button id="actionBtn" onclick="sendAction()">ACTIVATE EXHIBIT</button>
+        
+        <p id="status">Disconnected from ESP32</p>
+    </div>
+
+    <script>
+        // Use the ESP32 IP. When hosting on the ESP32, window.location.hostname works automatically.
+        var gateway = `ws://${window.location.hostname}/ws`;
+        var websocket;
+
+        function initWebSocket() {
+            console.log('Trying to open a WebSocket connection...');
+            websocket = new WebSocket(gateway);
+            websocket.onopen    = onOpen;
+            websocket.onclose   = onClose;
+            websocket.onmessage = onMessage;
+        }
+
+        function onOpen(event) {
+            document.getElementById('status').innerHTML = "Connected to Museum Server";
+            document.getElementById('status').style.color = "#2ed573";
+        }
+
+        function onClose(event) {
+            document.getElementById('status').innerHTML = "Connection Lost. Retrying...";
+            setTimeout(initWebSocket, 2000);
+        }
+
+        // REACTION: This runs when the ARDUINO sends data to the PHONE
+        function onMessage(event) {
+            console.log("Data from Arduino:", event.data);
+            
+            if (event.data === "NEAR_BEACON") {
+                document.body.style.backgroundColor = "#ffeaa7";
+                document.getElementById('title').innerText = "Discovery Found!";
+                document.getElementById('description').innerText = "You are standing near the Golden Statue.";
+                document.getElementById('actionBtn').classList.add('trigger-active');
+            }
+        }
+
+        // CONTROL: This sends data from the PHONE to the ARDUINO
+        function sendAction() {
+            // Sends the string "toggle" to the ESP32 to turn on a physical light/motor
+            websocket.send('toggle');
+        }
+
+        window.onload = initWebSocket;
+    </script>
+</body>
+</html>
