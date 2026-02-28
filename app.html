@@ -22,9 +22,8 @@
   </div>
 
   <script>
-    var gateway;
-    var websocket;
-
+var gateway = `ws://192.168.1.50/ws`; 
+var websocket = new WebSocket(gateway);
     function connect() {
       var ip = document.getElementById('ipAddr').value;
       gateway = `ws://${ip}/ws`;
