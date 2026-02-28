@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>External Control</title>
+  <style>
+    body { font-family: sans-serif; background: #121212; color: white; text-align: center; }
+    .container { margin-top: 50px; }
+    button { padding: 20px; margin: 10px; width: 150px; cursor: pointer; border-radius: 10px; border: none; font-weight: bold; }
+    .on { background: #2ecc71; } .off { background: #e74c3c; } .blink { background: #f1c40f; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Remote Exhibit Control</h1>
+    <input type="text" id="ipAddr" value="192.168.1.XXX"> 
+    <button onclick="connect()">Connect</button>
+    <hr>
+    <button class="off" onclick="send('0')">OFF</button>
+    <button class="on" onclick="send('1')">ON</button>
+    <button class="blink" onclick="send('2')">SLOW</button>
+    <button class="blink" onclick="send('3')">FAST</button>
+  </div>
+
+  <script>
+    var gateway;
+    var websocket;
+
+    function connect() {
+      var ip = document.getElementById('ipAddr').value;
+      gateway = `ws://${ip}/ws`;
+      websocket = new WebSocket(gateway);
+      websocket.onopen = () => alert("Connected to ESP32!");
+      websocket.onerror = () => alert("Connection Failed. Check IP.");
+    }
+
+    function send(mode) {
+      if(websocket && websocket.readyState === WebSocket.OPEN) {
+        websocket.send(mode);
+      } else {
+        alert("Not connected. Click Connect first.");
+      }
+    }
+  </script>
+</body>
+</html>
