@@ -1,34 +1,108 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>4G Global Control</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
   <style>
-    body { font-family: sans-serif; background: #121212; color: white; text-align: center; display: flex; flex-direction: column; align-items: center; }
-    button { padding: 20px; margin: 10px; width: 80%; max-width: 300px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; }
-    .on { background: #2ecc71; } .off { background: #e74c3c; } .blink { background: #f1c40f; }
+    body { 
+      font-family: -apple-system, sans-serif; 
+      background: #121212; 
+      color: white; 
+      display: flex; 
+      flex-direction: column; 
+      align-items: center; 
+      padding-top: 50px;
+      margin: 0;
+    }
+    .container { width: 90%; max-width: 400px; text-align: center; }
+    h1 { font-size: 1.5rem; margin-bottom: 5px; }
+    #status { font-size: 0.9rem; color: #888; margin-bottom: 30px; }
+    .status-online { color: #2ecc71 !important; font-weight: bold; }
+    
+    button { 
+      padding: 20px; 
+      margin: 10px 0; 
+      width: 100%; 
+      border-radius: 12px; 
+      border: none; 
+      font-weight: bold; 
+      font-size: 1rem;
+      cursor: pointer; 
+      transition: transform 0.1s, opacity 0.2s;
+    }
+    button:active { transform: scale(0.98); }
+    button:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .on { background: #2ecc71; color: white; } 
+    .off { background: #e74c3c; color: white; } 
+    .blink { background: #f1c40f; color: #121212; }
   </style>
 </head>
 <body>
-  <h1>4G Exhibit Control</h1>
-  <p id="status">Connecting...</p>
-  <button class="on" onclick="send('1')">TURN ON</button>
-  <button class="off" onclick="send('0')">TURN OFF</button>
-  <button class="blink" onclick="send('2')">SLOW BLINK</button>
-  <button class="blink" onclick="send('3')">FAST STROBE</button>
+  <div class="container">
+    <h1>4G Exhibit Control</h1>
+    <p id="status">Connecting to Cloud...</p>
+    
+    <button class="on" id="btn1" onclick="send('1')" disabled>TURN ON</button>
+    <button class="off" id="btn0" onclick="send('0')" disabled>TURN OFF</button>
+    <button class="blink" id="btn2" onclick="send('2')" disabled>SLOW BLINK</button>
+    <button class="blink" id="btn3" onclick="send('3')" disabled>FAST STROBE</button>
+  </div>
 
   <script>
-    // Use WebSockets to talk to the MQTT Broker
-    var client = new Paho.MQTT.Client("broker.hivemq.com", 8000, "clientId_" + Math.random());
+    // --- SETTINGS ---
+    // Make sure the topic matches your C++ code EXACTLY
+    const mqtt_topic = "exhibit/clive/lights"; 
+    const broker_host = "broker.hivemq.com";
+    const broker_port = 8884; // Use 8884 for WSS (Secure)
 
-    client.onConnectionLost = (obj) => { document.getElementById("status").innerHTML = "Lost Connection"; };
-    client.connect({onSuccess: () => { document.getElementById("status").innerHTML = "CONNECTED VIA 4G"; }});
+    // Create a client instance
+    var client = new Paho.MQTT.Client(broker_host, broker_port, "clive_web_" + Math.random().toString(16).substr(2, 8));
+
+    // Connect options
+    var options = {
+      useSSL: true, // REQUIRED for GitHub Pages (HTTPS)
+      timeout: 3,
+      onSuccess: onConnect,
+      onFailure: doFail
+    };
+
+    // Start connection
+    client.connect(options);
+
+    function onConnect() {
+      console.log("Connected to MQTT Broker");
+      document.getElementById("status").innerHTML = "● CONNECTED VIA 4G";
+      document.getElementById("status").className = "status-online";
+      
+      // Enable buttons
+      document.querySelectorAll('button').forEach(btn => btn.disabled = false);
+    }
+
+    function doFail(e) {
+      console.log("Connect Error: " + e.errorMessage);
+      document.getElementById("status").innerHTML = "Connection Failed. Retrying...";
+      setTimeout(() => client.connect(options), 5000);
+    }
 
     function send(msg) {
-      var message = new Paho.MQTT.Message(msg);
-      message.destinationName = "exhibit/clive/lights"; // MUST MATCH C++ TOPIC
-      client.send(message);
+      if (client.isConnected()) {
+        var message = new Paho.MQTT.Message(msg);
+        message.destinationName = mqtt_topic;
+        client.send(message);
+        console.log("Sent: " + msg);
+      }
     }
+
+    client.onConnectionLost = (responseObject) => {
+      if (responseObject.errorCode !== 0) {
+        document.getElementById("status").innerHTML = "Connection Lost. Reconnecting...";
+        document.getElementById("status").className = "";
+        document.querySelectorAll('button').forEach(btn => btn.disabled = true);
+      }
+    };
   </script>
 </body>
 </html>
