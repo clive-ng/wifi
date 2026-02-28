@@ -3,32 +3,91 @@
 <head>
   <title>External Control</title>
   <style>
-    body { font-family: sans-serif; background: #121212; color: white; text-align: center; }
-    .container { margin-top: 50px; }
-    button { padding: 20px; margin: 10px; width: 150px; cursor: pointer; border-radius: 10px; border: none; font-weight: bold; }
-    .on { background: #2ecc71; } .off { background: #e74c3c; } .blink { background: #f1c40f; }
+    body { 
+      font-family: sans-serif; 
+      background: #121212; 
+      color: white; 
+      display: flex;
+      justify-content: center;
+      padding-top: 50px;
+      margin: 0;
+    }
+
+    /* This creates the vertical stack */
+    .container { 
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 90%;
+      max-width: 400px;
+    }
+
+    h1 { margin-bottom: 30px; }
+
+    input {
+      padding: 12px;
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: #222;
+      color: white;
+      text-align: center;
+      margin-bottom: 10px;
+      box-sizing: border-box; /* Ensures padding doesn't break width */
+    }
+
+    hr { width: 100%; border: 0.5px solid #333; margin: 20px 0; }
+
+    button { 
+      padding: 20px; 
+      margin: 8px 0; /* Vertical margin only for the stack */
+      width: 100%;   /* Makes buttons fill the container width */
+      cursor: pointer; 
+      border-radius: 12px; 
+      border: none; 
+      font-weight: bold; 
+      font-size: 1rem;
+      transition: transform 0.1s;
+    }
+
+    button:active { transform: scale(0.98); }
+
+    .btn-connect { background: #3498db; color: white; margin-bottom: 10px; }
+    .on { background: #2ecc71; color: white; } 
+    .off { background: #e74c3c; color: white; } 
+    .blink { background: #f1c40f; color: #121212; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Remote Exhibit Control</h1>
-    <input type="text" id="ipAddr" value="192.168.1.XXX"> 
-    <button onclick="connect()">Connect</button>
+    <h1>Exhibit Control</h1>
+    
+    <input type="text" id="ipAddr" value="192.168.1.50"> 
+    <button class="btn-connect" onclick="connect()">CONNECT</button>
+    
     <hr>
-    <button class="off" onclick="send('0')">OFF</button>
-    <button class="on" onclick="send('1')">ON</button>
-    <button class="blink" onclick="send('2')">SLOW</button>
-    <button class="blink" onclick="send('3')">FAST</button>
+    
+    <button class="on" onclick="send('1')">TURN ON</button>
+    <button class="off" onclick="send('0')">TURN OFF</button>
+    <button class="blink" onclick="send('2')">SLOW BLINK</button>
+    <button class="blink" onclick="send('3')">FAST STROBE</button>
   </div>
 
   <script>
-var gateway = `ws://192.168.1.50/ws`; 
-var websocket = new WebSocket(gateway);
+    var gateway;
+    var websocket;
+
     function connect() {
       var ip = document.getElementById('ipAddr').value;
       gateway = `ws://${ip}/ws`;
       websocket = new WebSocket(gateway);
-      websocket.onopen = () => alert("Connected to ESP32!");
+      
+      websocket.onopen = () => {
+        alert("Connected to ESP32!");
+        document.querySelector('.btn-connect').style.background = "#27ae60";
+        document.querySelector('.btn-connect').innerText = "CONNECTED";
+      };
+      
       websocket.onerror = () => alert("Connection Failed. Check IP.");
     }
 
