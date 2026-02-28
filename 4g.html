@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>4G Global Control</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+  <style>
+    body { font-family: sans-serif; background: #121212; color: white; text-align: center; display: flex; flex-direction: column; align-items: center; }
+    button { padding: 20px; margin: 10px; width: 80%; max-width: 300px; border-radius: 10px; border: none; font-weight: bold; cursor: pointer; }
+    .on { background: #2ecc71; } .off { background: #e74c3c; } .blink { background: #f1c40f; }
+  </style>
+</head>
+<body>
+  <h1>4G Exhibit Control</h1>
+  <p id="status">Connecting...</p>
+  <button class="on" onclick="send('1')">TURN ON</button>
+  <button class="off" onclick="send('0')">TURN OFF</button>
+  <button class="blink" onclick="send('2')">SLOW BLINK</button>
+  <button class="blink" onclick="send('3')">FAST STROBE</button>
+
+  <script>
+    // Use WebSockets to talk to the MQTT Broker
+    var client = new Paho.MQTT.Client("broker.hivemq.com", 8000, "clientId_" + Math.random());
+
+    client.onConnectionLost = (obj) => { document.getElementById("status").innerHTML = "Lost Connection"; };
+    client.connect({onSuccess: () => { document.getElementById("status").innerHTML = "CONNECTED VIA 4G"; }});
+
+    function send(msg) {
+      var message = new Paho.MQTT.Message(msg);
+      message.destinationName = "exhibit/clive/lights"; // MUST MATCH C++ TOPIC
+      client.send(message);
+    }
+  </script>
+</body>
+</html>
