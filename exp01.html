@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Museum Shader Explorer</title>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; font-family: sans-serif; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        #ui { 
+            position: absolute; top: 20px; left: 20px; color: white; 
+            background: rgba(0,0,0,0.6); padding: 15px; border-radius: 10px;
+        }
+        button { padding: 10px; cursor: pointer; border-radius: 5px; border: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div id="ui">
+    <h2>Artifact Radar</h2>
+    <button id="scanBtn">START RADAR SCAN</button>
+    <div style="margin-top: 10px;">Distance: <span id="distLabel">--</span>m</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+// --- SHADER SETUP ---
+const vertexShader = `void main() { gl_Position = vec4(position, 1.0); }`;
+
+const fragmentShader = `
+    uniform float t;        // Time
+    uniform vec2 r;        // Resolution
+    uniform float dist;     // iBeacon Distance (Passed from JS)
+    
+    void mainImage(out vec4 o, in vec2 FC) {
+        float i,s,R,e;
+        vec3 q,p,d=vec3((FC.xy-.5*r)/r.y+vec2(0,1),1);
+        
+        // As distance gets smaller (closer), we increase the effect intensity
+        float intensity = clamp(5.0 / (dist + 0.1), 0.5, 5.0);
+        
+        for(q.yz--; i++ < 50.;) {
+            e += i / 5e3;
+            if(i > 35.0) d /= -d;
+            
+            // hsv() helper
+            vec3 c = vec3(0.1, e - 0.4, e / 17.0);
+            vec3 h = clamp(abs(mod(c.x*6.0+vec3(0,4,2),6.0)-3.0)-1.0, 0.0, 1.0);
+            o.rgb += h * c.z;
+            
+            s = 1.0;
+            p = q += d * e * R * 0.18;
+            p = vec3(log(R=length(p)) - t * (0.2 * intensity), -p.z/R, p.yz - 1.0 * p.xx - t * 0.2);
+            
+            for(e = --p.y; s < 5e2; s += s) {
+                e += cos(dot(cos(p*s), sin(p.zxy*s))) / s * 0.8;
+            }
+        }
+        o.a = 1.0;
+    }
+
+    void main() {
+        mainImage(gl_FragColor, gl_FragCoord.xy);
+    }
+`;
+
+// --- THREE.JS INITIALIZATION ---
+const scene = new THREE.Scene();
+const camera = new THREE.Camera();
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const uniforms = {
+    t: { value: 0 },
+    r: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+    dist: { value: 10.0 } // Default far distance
+};
+
+const material = new THREE.ShaderMaterial({ uniforms, vertexShader, fragmentShader });
+const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+scene.add(mesh);
+
+function animate(time) {
+    uniforms.t.value = time * 0.001;
+    renderer.render(scene, camera);
+    requestAnimationFrame(animate);
+}
+animate();
+
+// --- BLUETOOTH DISTANCE LOGIC ---
+const scanBtn = document.getElementById('scanBtn');
+const distLabel = document.getElementById('distLabel');
+
+scanBtn.addEventListener('click', async () => {
+    try {
+        const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true });
+        scanBtn.innerText = "Tracking: " + (device.name || "Beacon");
+        
+        device.addEventListener('advertisementreceived', (event) => {
+            let rssi = event.rssi;
+            let txPower = -59; 
+            let distance = Math.pow(10, (txPower - rssi) / 20).toFixed(2);
+            
+            distLabel.innerText = distance;
+            uniforms.dist.value = parseFloat(distance); // Pass distance to Shader!
+        });
+
+        await device.watchAdvertisements();
+    } catch (e) { console.error(e); }
+});
+</script>
+</body>
+</html>
