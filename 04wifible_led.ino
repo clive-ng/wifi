@@ -5,8 +5,8 @@
 #include <BLEBeacon.h>
 
 // --- WiFi & MQTT Settings ---
-const char* ssid = "ln2";
-const char* password = "98481758";
+const char* ssid = "Point";
+const char* password = "ucaclive";
 const char* mqtt_server = "broker.hivemq.com";
 const char* topic = "exhibit/clive/lights"; 
 
