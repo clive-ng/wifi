@@ -4,7 +4,7 @@
 
 // --- WiFi Settings ---
 const char* ssid = "Exhibit_Light_Control";
-const char* password = "password123";
+const char* password = "ucaclive";
 
 // --- Hardware Settings ---
 const int ledPin = 2; // Pin 2 is usually the built-in blue LED on the ESP32
