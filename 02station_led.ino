@@ -3,8 +3,8 @@
 #include <ESPAsyncWebServer.h>
 
 // --- WiFi Credentials ---
-const char* ssid = "";
-const char* password = "";
+const char* ssid = "Point";
+const char* password = "ucaclive";
 
 // --- Static IP Configuration (Matches your 192.168.0.1 Router) ---
 IPAddress local_IP(192, 168, 0, 50);   // The IP for your ESP32
