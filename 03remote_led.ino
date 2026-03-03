@@ -2,8 +2,8 @@
 #include <PubSubClient.h> // Install this library!
 
 // --- WiFi Settings ---
-const char* ssid = "";
-const char* password = "";
+const char* ssid = "Point";
+const char* password = "ucaclive";
 
 // --- MQTT Settings ---
 const char* mqtt_server = "broker.hivemq.com";
